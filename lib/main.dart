@@ -36,6 +36,7 @@ class _FeedCalcScreenState extends State<FeedCalcScreen> {
   double? _dailyFeed;
   String? _feedWarning;
   String? _resultText;
+  String? _dailyFeedLine;
 
   @override
   void dispose() {
@@ -72,6 +73,7 @@ class _FeedCalcScreenState extends State<FeedCalcScreen> {
         _dailyFeed = null;
         _feedWarning = 'Lütfen geçerli değerler girin.';
         _resultText = null;
+        _dailyFeedLine = null;
       });
       return;
     }
@@ -81,25 +83,22 @@ class _FeedCalcScreenState extends State<FeedCalcScreen> {
     final bool badTemp = temp > 18 || temp < 4;
 
     final double feedRate = _getFeedRate(species, temp);
+    final double dailyFeed = biomass * feedRate / 100;
 
     final String baseResult =
         'Tür: $species\nBiyokitle: ${biomass.toStringAsFixed(2)} kg\nSıcaklık: ${temp.toStringAsFixed(1)} °C\nÖnerilen yem oranı: ${feedRate.toStringAsFixed(1)} %';
 
-    if (isSalmon && badTemp) {
-      setState(() {
-        _dailyFeed = null;
-        _feedWarning = 'Somon için bu su sıcaklığında yemleme önerilmez.';
-        _resultText = baseResult;
-      });
-      return;
-    }
-
-    final double dailyFeed = biomass * feedRate / 100;
+    final String dailyFeedLine = isSalmon && badTemp
+        ? 'Günlük yem: Somon için bu su sıcaklığında yemleme önerilmez.'
+        : 'Günlük yem: ${dailyFeed.toStringAsFixed(2)} kg';
+    final String? feedWarning =
+        isSalmon && badTemp ? 'Somon için bu su sıcaklığında yemleme önerilmez.' : null;
 
     setState(() {
-      _dailyFeed = dailyFeed;
-      _feedWarning = null;
+      _dailyFeed = feedWarning == null ? dailyFeed : null;
+      _feedWarning = feedWarning;
       _resultText = baseResult;
+      _dailyFeedLine = dailyFeedLine;
     });
   }
 
@@ -178,10 +177,7 @@ class _FeedCalcScreenState extends State<FeedCalcScreen> {
                 child: Text(
                   [
                     _resultText!,
-                    if (_feedWarning != null)
-                      'Günlük yem: $_feedWarning'
-                    else if (_dailyFeed != null)
-                      'Günlük yem: ${_dailyFeed!.toStringAsFixed(2)} kg'
+                    if (_dailyFeedLine != null) _dailyFeedLine!,
                   ].join('\n'),
                   style: const TextStyle(fontSize: 14),
                 ),
