@@ -35,6 +35,7 @@ class _FeedCalcScreenState extends State<FeedCalcScreen> {
   String? _selectedSpecies = 'Somon';
   double? _dailyFeed;
   String? _feedWarning;
+  String? _resultText;
 
   @override
   void dispose() {
@@ -70,24 +71,35 @@ class _FeedCalcScreenState extends State<FeedCalcScreen> {
       setState(() {
         _dailyFeed = null;
         _feedWarning = 'Lütfen geçerli değerler girin.';
+        _resultText = null;
       });
       return;
     }
 
-    if (species == 'Somon' && (temp > 18 || temp < 4)) {
+    final String speciesLower = species.toLowerCase();
+    final bool isSalmon = speciesLower.contains('somon') || speciesLower.contains('salmon');
+    final bool badTemp = temp > 18 || temp < 4;
+
+    final double feedRate = _getFeedRate(species, temp);
+
+    final String baseResult =
+        'Tür: $species\nBiyokitle: ${biomass.toStringAsFixed(2)} kg\nSıcaklık: ${temp.toStringAsFixed(1)} °C\nÖnerilen yem oranı: ${feedRate.toStringAsFixed(1)} %';
+
+    if (isSalmon && badTemp) {
       setState(() {
         _dailyFeed = null;
         _feedWarning = 'Somon için bu su sıcaklığında yemleme önerilmez.';
+        _resultText = baseResult;
       });
       return;
     }
 
-    final double feedRate = _getFeedRate(species, temp);
     final double dailyFeed = biomass * feedRate / 100;
 
     setState(() {
       _dailyFeed = dailyFeed;
       _feedWarning = null;
+      _resultText = baseResult;
     });
   }
 
@@ -153,6 +165,27 @@ class _FeedCalcScreenState extends State<FeedCalcScreen> {
               )
             else if (_dailyFeed != null)
               Text('Günlük yem miktarı: ${_dailyFeed!.toStringAsFixed(2)} kg'),
+            const SizedBox(height: 12),
+            if (_resultText != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade100),
+                ),
+                child: Text(
+                  [
+                    _resultText!,
+                    if (_feedWarning != null)
+                      'Günlük yem: $_feedWarning'
+                    else if (_dailyFeed != null)
+                      'Günlük yem: ${_dailyFeed!.toStringAsFixed(2)} kg'
+                  ].join('\n'),
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
           ],
         ),
       ),
