@@ -1,23 +1,60 @@
-import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-/// Basit bir somon yem hesaplama uygulaması.
-/// Kullanıcıdan toplam biyokütle (kg) ve günlük yemleme oranı (%) alır
-/// ve gerekli günlük yem miktarını hesaplar.
 void main() {
-  stdout.write('Toplam bal\u0131k biyok\u00fctlesi (kg): ');
-  String? biomassInput = stdin.readLineSync();
+  runApp(const FishFeedApp());
+}
 
-  stdout.write('G\u00fcnl\u00fck yemleme oran\u0131 (%): ');
-  String? feedRateInput = stdin.readLineSync();
+class FishFeedApp extends StatelessWidget {
+  const FishFeedApp({super.key});
 
-  double? biomass = double.tryParse(biomassInput ?? '');
-  double? feedRate = double.tryParse(feedRateInput ?? '');
-
-  if (biomass == null || feedRate == null) {
-    print('Ge\u00e7ersiz giri\u015f');
-    exit(1);
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      onGenerateTitle: (context) =>
+          AppLocalizations.of(context)?.appTitle ?? 'FishFeed',
+      locale: const Locale('en'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const MenuScreen(),
+    );
   }
+}
 
-  double feed = biomass * feedRate / 100;
-  print('G\u00fcnl\u00fck yem miktar\u0131: ${feed.toStringAsFixed(2)} kg');
+class MenuScreen extends StatelessWidget {
+  const MenuScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(loc.appTitle),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ElevatedButton(
+              onPressed: () {},
+              child: Text(loc.menuInfo),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () {},
+              child: Text(loc.menuFeedCalc),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () {},
+              child: Text(loc.menuFeeding),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
