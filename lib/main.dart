@@ -1,23 +1,161 @@
-import 'dart:io';
+import 'package:flutter/material.dart';
 
-/// Basit bir somon yem hesaplama uygulaması.
-/// Kullanıcıdan toplam biyokütle (kg) ve günlük yemleme oranı (%) alır
-/// ve gerekli günlük yem miktarını hesaplar.
 void main() {
-  stdout.write('Toplam bal\u0131k biyok\u00fctlesi (kg): ');
-  String? biomassInput = stdin.readLineSync();
+  runApp(const FeedCalcApp());
+}
 
-  stdout.write('G\u00fcnl\u00fck yemleme oran\u0131 (%): ');
-  String? feedRateInput = stdin.readLineSync();
+class FeedCalcApp extends StatelessWidget {
+  const FeedCalcApp({super.key});
 
-  double? biomass = double.tryParse(biomassInput ?? '');
-  double? feedRate = double.tryParse(feedRateInput ?? '');
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Yem Hesaplama',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
+      home: const FeedCalcScreen(),
+    );
+  }
+}
 
-  if (biomass == null || feedRate == null) {
-    print('Ge\u00e7ersiz giri\u015f');
-    exit(1);
+class FeedCalcScreen extends StatefulWidget {
+  const FeedCalcScreen({super.key});
+
+  @override
+  State<FeedCalcScreen> createState() => _FeedCalcScreenState();
+}
+
+class _FeedCalcScreenState extends State<FeedCalcScreen> {
+  final TextEditingController _biomassController = TextEditingController();
+  final TextEditingController _temperatureController = TextEditingController();
+  final List<String> _speciesOptions = const ['Somon', 'Levrek', 'Çipura'];
+
+  String? _selectedSpecies = 'Somon';
+  double? _dailyFeed;
+  String? _feedWarning;
+
+  @override
+  void dispose() {
+    _biomassController.dispose();
+    _temperatureController.dispose();
+    super.dispose();
   }
 
-  double feed = biomass * feedRate / 100;
-  print('G\u00fcnl\u00fck yem miktar\u0131: ${feed.toStringAsFixed(2)} kg');
+  double _getFeedRate(String species, double temperature) {
+    if (temperature <= 8) {
+      return 0.5;
+    }
+    if (temperature >= 18) {
+      return 1.0;
+    }
+
+    switch (species) {
+      case 'Levrek':
+        return 1.5;
+      case 'Çipura':
+        return 1.3;
+      default:
+        return 1.2;
+    }
+  }
+
+  void _calculateFeed() {
+    final double? biomass = double.tryParse(_biomassController.text.replaceAll(',', '.'));
+    final double? temp = double.tryParse(_temperatureController.text.replaceAll(',', '.'));
+    final String? species = _selectedSpecies;
+
+    if (biomass == null || temp == null || species == null) {
+      setState(() {
+        _dailyFeed = null;
+        _feedWarning = 'Lütfen geçerli değerler girin.';
+      });
+      return;
+    }
+
+    if (species == 'Somon' && (temp > 18 || temp < 4)) {
+      setState(() {
+        _dailyFeed = null;
+        _feedWarning = 'Somon için bu su sıcaklığında yemleme önerilmez.';
+      });
+      return;
+    }
+
+    final double feedRate = _getFeedRate(species, temp);
+    final double dailyFeed = biomass * feedRate / 100;
+
+    setState(() {
+      _dailyFeed = dailyFeed;
+      _feedWarning = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Yem Hesaplama'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _biomassController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Toplam biyokütle (kg)',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _temperatureController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Su sıcaklığı (°C)',
+              ),
+            ),
+            const SizedBox(height: 12),
+            DropdownButton<String>(
+              value: _selectedSpecies,
+              items: _speciesOptions
+                  .map(
+                    (species) => DropdownMenuItem<String>(
+                      value: species,
+                      child: Text(species),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedSpecies = value;
+                });
+              },
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _calculateFeed,
+                child: const Text('Hesapla'),
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (_feedWarning != null)
+              Text(
+                _feedWarning!,
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            else if (_dailyFeed != null)
+              Text('Günlük yem miktarı: ${_dailyFeed!.toStringAsFixed(2)} kg'),
+          ],
+        ),
+      ),
+    );
+  }
 }
